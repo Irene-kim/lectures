@@ -13,18 +13,26 @@ library(quanteda)
 data(data_corpus_ukmanifestos, package = "quanteda.corpora")
 # cleaning dataset
 ukCorpus <- corpus_subset(data_corpus_ukmanifestos, Year %in% c(1992, 1997) & Party %in% c("Con", "Lab", "LD"))
+# sep="_" ?? 
 docnames(ukCorpus) <- paste(docvars(ukCorpus, "Party"), docvars(ukCorpus, "Year"), sep="_")
+
+docvars(ukCorpus)
+
 # creating DFM
 ukDfm <- dfm(ukCorpus)
 summary(ukCorpus)
 
-# fitting wordscores
+# fitting wordscores (3 NA spots- 3 virgins texts we do ot know anything about but want to score)
 ws <- textmodel_wordscores(ukDfm, c(17.21, 5.35, 8.21, rep(NA, 3)))
+?textmodel_wordscores
 
 # checking a few individual wordscores
+#law-abidin - right wing party, school and other two - fall into the other side(left political party)
+#coef-gice us the score
 coef(ws)[c("law-abiding", "schools", "unemployment", "social")]
 
 # Now trying to predict the scores for all the manifestos
+# we have words that are used frequently overlapping acorss the document - reason why the score is different from the coef(ws), thus need rescaling
 predict(ws)
 # almost but not exactly!
 (pred <- predict(ws, newdata = ukDfm[4:6, ], rescaling = "lbg"))
@@ -33,6 +41,7 @@ predict(ws)
 wsSm <- textmodel_wordscores(ukDfm, c(17.21, 5.35, 8.21, rep(NA, 3)), smooth = 1)
 predsm <- predict(wsSm, newdata = ukDfm[4:6,], rescaling = "lbg")
 predsm
+# in this case it is not doing much - correlation is 0.99
 cor(pred, predsm)
 
 ```
@@ -48,9 +57,10 @@ cong <- read.csv("data/congress-tweets.csv", stringsAsFactors=F)
 # create corpus object
 ccorpus <- corpus(cong$text)
 docnames(ccorpus) <- cong$screen_name
+docvars(ccorpus)
 # create DFM
 cdfm <- dfm(ccorpus, remove_punct=TRUE, remove=c(stopwords("english"), "t.co", "https", "rt", "amp", "http", "t.c", "can"))
-# trimming rare terms
+# trimming rare terms - removing noise words 
 cdfm <- dfm_trim(cdfm, min_docfreq = 2)
 ```
 
@@ -60,9 +70,11 @@ Now we can run wordscores on this DFM. To begin with, we choose as reference tex
 # running wordscores
 ws <- textmodel_wordscores(cdfm, cong$idealPoint, smooth=.5)
 ws
-# let's look at the most discriminant words
+# let's look at the most discriminant words - words that are informative and not informatice
 sw <- sort(coef(ws))
+#most leaning left words ( #climatechange )
 head(sw, n=20)
+#more right leaning wordscores (politicians, #jobs)
 tail(sw, n=20)
 ```
 
@@ -70,19 +82,21 @@ Now let's do a more typical example of Wordscores by selecting 20 of the Members
 
 ```{r}
 set.seed(123)
+#randomly sample 20 percent of the document 
 test <- sample(1:nrow(cong), floor(.20 * nrow(cong)))
-# extracting ideal points and replacing them with missing values
+# extracting ideal points and replacing them with missing values - all of these will serve as virgin texts 
 refpoints <- cong$idealPoint
 refpoints[test] <- NA
 # running wordscores
 ws <- textmodel_wordscores(cdfm, refpoints, smooth=.5)
 # predicted values
 preds <- predict(ws, rescaling="lbg")
-# and let's compare
+# and let's compare with the actual ideal point estimated 
 plot(preds[test], cong$idealPoint[test],
      xlab="Wordscores estimates", 
      ylab="Ideal points from roll-call votes",
      col=ifelse(cong$party[test]=="R", "red", "blue"))
+#we got pretty high correlation - analyse the performance of wordscore (similar to machine learning)
 cor(preds[test], cong$idealPoint[test])
 ```
 
