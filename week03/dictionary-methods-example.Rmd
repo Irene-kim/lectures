@@ -59,6 +59,7 @@ We can then extract the score and add it to the data frame as a new variable
 
 ```{r}
 tweets$score <- as.numeric(sent[,1]) - as.numeric(sent[,2])
+head(tweets$score)
 ```
 
 And now start answering some descriptive questions...
@@ -70,6 +71,7 @@ mean(tweets$score)
 tweets[which.max(tweets$score),]
 tweets[which.min(tweets$score),]
 # what is the proportion of positive, neutral, and negative tweets?
+# overwrite the values 
 tweets$sentiment <- "neutral"
 tweets$sentiment[tweets$score<0] <- "negative"
 tweets$sentiment[tweets$score>0] <- "positive"
@@ -79,6 +81,7 @@ table(tweets$sentiment)
 We can also compute it at the candidate level by taking the average of the sentiment scores:
 
 ```{r}
+# average sentiment of specific candidates
 # loop over candidates
 candidates <- c("realDonaldTrump", "HillaryClinton", "tedcruz", "BernieSanders")
 
@@ -87,9 +90,12 @@ for (cand in candidates){
       round(mean(tweets$score[tweets$screen_name==cand]), 4)
     )
 }
+
+# a single word might be driving the entire result. Thus, we need to validate.
 ```
 
 But what happens if we now run the analysis excluding a single word?
+The result shows how a single word "great" is driving the entire result in dictionary method. 
 
 ```{r}
 pos.words <- pos.words[-which(pos.words=="great")]
@@ -108,6 +114,7 @@ for (cand in candidates){
 ```
 
 How would we normalize by text length? (Maybe not necessary here given that tweets have roughly the same length.)
+Just because your text is longer - which means it has more words might mislead the results. 
 
 ```{r}
 # collapse by account into 4 documents
@@ -122,6 +129,7 @@ twdfm[1:4, 1:10]
 # Apply dictionary using `dfm_lookup()` function:
 sent <- dfm_lookup(twdfm, dictionary = mydict)
 sent
+# remove negative and mulitply 100 to the postive feature
 (sent[,1]-sent[,2])*100
 
 ```
@@ -142,12 +150,14 @@ twdfm <- dfm(twcorpus, groups = "screen_name")
 twdfm <- dfm_weight(twdfm, scheme="prop")
 # 3) apply dictionary
 moral <- dfm_lookup(twdfm, dictionary = data_dictionary_MFD)
+moral
 
-# are liberals more sensitive to care and virtue?
+# are liberals more sensitive to care and virtue? Are Hiliary and Bernie gonna use more care-virtue than other candidates? Do they talk about fairness more than other candidates?
 sort(moral[,'care.virtue']*100)
 sort(moral[,'fairness.virtue']*100)
 
 # are conservatives more sensitive to sanctity and authority?
+# the more authoritarian the parenting style they are the more likely they would support Trump.
 sort(moral[,'sanctity.virtue']*100)
 sort(moral[,'authority.virtue']*100)
 
@@ -158,9 +168,13 @@ sort(moral[,'authority.virtue']*100)
 _Keyness_ is a measure of to what extent some features are specific to a (group of) document in comparison to the rest of the corpus, taking into account that some features may be too rare.
 
 ```{r}
+#group by politions 
 twdfm <- dfm(twcorpus, groups=c("screen_name"), verbose=TRUE)
 
 # Donald Trump
+# extstat_keyness - do chi-square test and do independence test 
+#textstat_keyness: Nice way to see discriptive statistics
+
 head(textstat_keyness(twdfm, target="realDonaldTrump",
                       measure="chi2"), n=20)
 textstat_keyness(twdfm, target="realDonaldTrump",
@@ -198,3 +212,4 @@ textstat_keyness(twdfm, target=docvars(twdfm)$datetime>"2016-05",
 
 ```
 
+#classifier approach - deep learning ->there are lots of available word vectors depending on what type of sentiment you want to meausre. If you have strong domain knowledge you might just want to use dictionary method rather than spending alot of time labelling 
