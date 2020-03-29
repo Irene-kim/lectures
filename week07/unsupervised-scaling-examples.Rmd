@@ -12,6 +12,7 @@ The following code replicates the Irish 2010 budget debate scaling from Lowe and
 # loading data
 library(quanteda)
 data(data_corpus_irishbudget2010)
+docvars(data_corpus_irishbudget2010)
 # making prettier document names
 docnames(data_corpus_irishbudget2010)  <- paste(
   docvars(data_corpus_irishbudget2010, "name"),
@@ -44,6 +45,10 @@ plot(wf$beta, wf$psi, type = "n",
      ylab = "Word frequency parameters")
 text(wf$beta, wf$psi, wf$features, col = "grey80", cex = .5)
 
+
+# centder - do, our - unimportant to differentiate that everybody uses / quite rare to see the application because it is difficult to validate the result
+# discriminative words - 에펠탑 양쪽 끝에 있는 것 
+
 ```
 
 ### Wordfish applied to Twitter data
@@ -63,6 +68,9 @@ cdfm <- dfm(ccorpus, remove_punct=TRUE,
 cdfm <- dfm_trim(cdfm, min_docfreq = 25)
 
 # running wordfish
+# you'll need to gice two document you as human identifier 
+# we need this to interpret the result - although wordfish is unsupervised, it still needs little supervision
+# does not change the direction of the model, but it's for the interpretation 
 wf <- textmodel_wordfish(cdfm, dir=c(34, 42))
 
 # how did we chose the two MCs that identify the model?

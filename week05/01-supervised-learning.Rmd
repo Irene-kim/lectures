@@ -29,8 +29,9 @@ As we saw in the lecture, we need to specify what the training set and test set 
 
 ```{r}
 # shuffling to split into training and test set
-smp <- sample(c("train", "test"), size=ndoc(cnames), 
+smpl <- sample(c("train", "test"), size=ndoc(cnames), 
                 prob=c(0.80, 0.20), replace=TRUE)
+table(smpl)
 train <- which(smp=="train")
 test <- which(smp=="test")
 

@@ -14,15 +14,18 @@ require(quanteda)
 Euclidean distance:
 
 ```{r}
+# we have two document here(two vectors of counts)
 docs <- c("this is document one", "this is document two")
 (doc_dfm <- dfm(docs))
 textstat_dist(doc_dfm, method="euclidean")
 
-# let's do the math...
+# we can do it by hands -  let's do the math...(go back to week7 ppt - Euclidean distance)
 (d1 <- as.numeric(doc_dfm[1,]))
 (d2 <- as.numeric(doc_dfm[2,]))
 
+# we get the same result
 sqrt(sum((d1 - d2)^2))
+
 ```
 
 Cosine similarity:
@@ -30,22 +33,25 @@ Cosine similarity:
 ```{r}
 textstat_simil(doc_dfm, method="cosine")
 
-# some more math...
+# by hands - some more math... end up getting the same thing 
 sum(d1 * d2) / ( sqrt(sum(d1^2)) *  sqrt(sum(d2^2)) )
 ```
 
 Note that these two metrics measure the opposite thing: Euclidean distance measures how *different* documents are, whereas cosine similarity measures how *similar* documents are. Of course, it's easy to reverse them; generally, we can just say (1 - distance) = similarity.
 
 Edit distance:
-
+similar to levenshtein distance 
 ```{r}
+#distance between these two strings 
 textstat_simil(doc_dfm, method="hamman")
 ```
 
 
 And here's an example of how we would apply these metrics in practice. Let's say I want to build a recommendation engine for my favorite type of movie.
 
+
 ```{r}
+install.packages("rlang", dependencies = TRUE)
 library(readr)
 # data source: http://www.cs.cmu.edu/~ark/personas/
 movie <- read_csv(unz("movie-plots.csv.zip", "movie-plots.csv"),
@@ -56,20 +62,27 @@ scifi <- which(movie$name=="Gravity")
 movie[scifi,]
 
 # pre-process the data
+# take the corpus and we are highlight the text place "plot"
 mcorp <- corpus(movie, text_field = "plot")
+# add name 
 docnames(mcorp) <- docvars(mcorp)$name
 mdfm <- dfm(mcorp, verbose=TRUE, remove_punct=TRUE,
             remove_numbers=TRUE, remove=stopwords("english"))
 
 # and I will compute cosine similarity with respect to all other movies
+# if we want we can use tfidf (downweight that are really common across the document and upweight ones that are.)
 simil <- textstat_simil(dfm_tfidf(mdfm), 
                         selection=scifi, method="cosine")
+
+# highest to lowest similarity
 simil <- simil[order(simil, decreasing=TRUE),]
 head(simil, n=5)
 
 # and we can read their plots
+# first 4 most similar documents 
 movie$plot[movie$name %in% names(simil)[2:5]]
 
+# netflix, SNS - will also do collaborative filtering (ex. what your friends watched)
 ```
 
 # Clustering methods
@@ -77,20 +90,28 @@ movie$plot[movie$name %in% names(simil)[2:5]]
 First we will explore an application of k-means clustering to the plots of recent movies:
 
 ```{r}
+# look at movie reviews from 2010 
 recent <- corpus_subset(mcorp, release_year>=2010)
 mdfm <- dfm(recent, verbose=TRUE, remove_punct=TRUE,
             remove_numbers=TRUE, remove=stopwords("english"))
+
+# use proportions instead of counts - normalise doc length 
 cdfm <- dfm_weight(dfm_trim(mdfm, min_docfreq = 5, verbose=TRUE), "prop")
 
-set.seed(777) # set random seed to ensure replicability
+set.seed(777) # set random seed to ensure replicability - because k means is random by assiging intialisation   
 kc <- kmeans(cdfm, centers=5)
+
+# number of doc assigned to each clusters 
 table(kc$cluster)
+# look at the cluster of 1,2,3,4,5
 head(docvars(recent)$name[kc$cluster==1])
 head(docvars(recent)$name[kc$cluster==2])
 head(docvars(recent)$name[kc$cluster==3])
 head(docvars(recent)$name[kc$cluster==4])
 head(docvars(recent)$name[kc$cluster==5])
 
+# textstat_keyness : looking at the key terms within clusters 
+# which terms are gonna be representative 
 # action movies?
 head(textstat_keyness(cdfm, target=kc$cluster==1),n=20)
 # romantic movies?
@@ -106,6 +127,7 @@ head(textstat_keyness(cdfm, target=kc$cluster==5),n=20)
 Hierarchical clustering is an alternative approach to group documents. It relies on the matrix of distances between documents and works from the bottom up to create clusters: starting with lowest pairwise distance, then sequentially merges documents into clusters as the distances become larger.
 
 ```{r}
+# look at the distrivution of the labels 
 library(quanteda.corpora)
 pres_dfm <- dfm(corpus_subset(data_corpus_sotu, Date > "1980-01-01"), 
                stem = TRUE, remove_punct = TRUE,
@@ -115,12 +137,17 @@ pres_dfm <- dfm_weight(
 
 # hierarchical clustering - get distances on normalized dfm
 pres_dist_mat <- textstat_dist(pres_dfm, method = "euclidean")
+pres_dist_mat <- as.dist(pres_dist_mat)
 
 # hiarchical clustering the distance object
 pres_cluster <- hclust(pres_dist_mat)
 
 # label with document names
 pres_cluster$labels <- docnames(pres_dfm)
+
+
+#dendrogram
+plot(pres_cluster)
 ```
 
 

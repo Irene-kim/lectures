@@ -16,6 +16,7 @@ require(quanteda)
 dfmat_inaug <- dfm(data_corpus_inaugural, remove = stopwords('en'))
 tstat_lexdiv <- textstat_lexdiv(dfmat_inaug)
 tail(tstat_lexdiv, 5)
+?textstat_lexdiv
 ```
 
 
@@ -23,6 +24,10 @@ tail(tstat_lexdiv, 5)
 plot(tstat_lexdiv$TTR, type = 'l', xaxt = 'n', xlab = NULL, ylab = "TTR")
 grid()
 axis(1, at = seq_len(nrow(tstat_lexdiv)), labels = docvars(dfmat_inaug, 'President'))
+
+#trend - steady downwards: 
+# interp 1: more mass media the greater accessibility of publics, presidents are appealing to broader public thus using easier language.
+# 2 getting dumber and dumber
 ```
 
 It can also calculate alternative metrics of lexical diversity:
@@ -32,6 +37,10 @@ It can also calculate alternative metrics of lexical diversity:
 tstat_lexdiv <- textstat_lexdiv(dfmat_inaug, measure=c("TTR", "R", "D"))
 tail(tstat_lexdiv, 5)
 # average-based methods
+# we are looking at the window and moving average - takes longer time 
+# result - we want them to be correlated with each other from all of the different measure (e.g., D, Vm, Mass)
+# Another way to validate: how the lexical diversity measure relate to human measurement 
+# how are you validating your data and analysis and justification is very important 
 tstat_lexdiv_avg <- textstat_lexdiv(tokens(data_corpus_inaugural), measure="MATTR")
 tail(tstat_lexdiv_avg, 5)
 
@@ -43,8 +52,13 @@ cor(cbind(tstat_lexdiv[,2:4], tstat_lexdiv_avg[,2]))
 `textstat_readability()` computes a metric of document complexity based on characteristics of the text such as number of words, sentence length, number of syllables, etc.
 
 ```{r}
+# explanation of all the different methods of readibility 
+?textstat_readability
+
 stat_read <- textstat_readability(data_corpus_inaugural,
                      measure = c("Flesch.Kincaid", "FOG"))
+
+# result: general decrease 
 plot(stat_read$Flesch.Kincaid, type = 'l', xaxt = 'n', xlab = NULL, ylab = "Flesch.Kincaid")
 grid()
 axis(1, at = seq_len(nrow(stat_read)), labels = docvars(dfmat_inaug, 'President'))

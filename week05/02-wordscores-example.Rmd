@@ -4,6 +4,7 @@ output: html_document
 ---
 
 ## Wordscores
+#supervisor is not scaling - either belong to class or not
 
 The following code replicates the UK manifestos scaling example from LBG 2003.
 
@@ -13,16 +14,17 @@ library(quanteda)
 data(data_corpus_ukmanifestos, package = "quanteda.corpora")
 # cleaning dataset
 ukCorpus <- corpus_subset(data_corpus_ukmanifestos, Year %in% c(1992, 1997) & Party %in% c("Con", "Lab", "LD"))
-# sep="_" ?? 
+# sep="_"  - changes docname -, .  
 docnames(ukCorpus) <- paste(docvars(ukCorpus, "Party"), docvars(ukCorpus, "Year"), sep="_")
-
+docnames(ukCorpus)
 docvars(ukCorpus)
 
 # creating DFM
 ukDfm <- dfm(ukCorpus)
 summary(ukCorpus)
 
-# fitting wordscores (3 NA spots- 3 virgins texts we do ot know anything about but want to score)
+# fitting wordscores (3 NA spots- 3 virgins texts we do not know anything about but want to score)
+# 3values for 1992, 1997
 ws <- textmodel_wordscores(ukDfm, c(17.21, 5.35, 8.21, rep(NA, 3)))
 ?textmodel_wordscores
 
